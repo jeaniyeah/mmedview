@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prompt and Dataset Examples</title>
+  <style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+    line-height: 1.6;
+    color: #222;
+  }
+
+  h1 { margin-bottom: 10px; }
+
+  details {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    background: #fafafa;
+  }
+
+  summary {
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .content {
+    margin-top: 10px;
+    background: #f6f8fa;
+    padding: 12px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+  }
+
+  .example {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: #fff;
+  }
+
+  .turn {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e5e5;
+  }
+
+  .turn.psychologist {
+    background: #fafafa;
+  }
+
+  .turn.patient {
+    background: #fcfcfc;
+  }
+
+  .turn img {
+    display: block;
+    max-width: 110px;
+    height: auto;
+    margin: 0 auto 12px auto;
+    border-radius: 6px;
+  }
+
+  .turn p {
+    margin: 6px 0;
+  }
+
+  .turn-label {
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .math {
+    font-style: italic;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>M-MedView Prompt and Dataset Examples</h1>
+<p>This page provides representative prompts and dataset samples used in our study.</p>
+
+<h2>1. Prompts</h2>
+
+<details>
+  <summary>Generate Synthetic Patient Profiles</summary>
+  <div class="content">
+Generate 5 synthetic patient profiles in JSON format.
+Each profile should represent a male patient diagnosed with depression,
+and must include the following fields:
+
+"id": A unique identifier such as "patient_{start_id:03d}"
+"gender": Always "male"
+"age": An integer between 20 and 59
+
+The profile should also include a nested object "pre_diagnosis_info" with
+the following fields:
+
+- "sleep_time": Time in 24-hour "HH:MM" format
+  (e.g., "23:30") (between 20:00 - 3:00)
+- "occupation": A realistic occupation
+  (e.g., "teacher", "software engineer", etc.)
+- "working_hours": A number between 20 and 60 representing hours worked per week before diagnosis
+- "weight": A float representing body weight in kilograms
+
+Return all 5 patient objects as an array in valid JSON format,
+using IDs starting from "patient_{start_id:03d}".
+  </div>
+</details>
+
+<details>
+  <summary>Generate Patient Utterances from Profile and Score Guide</summary>
+  <div class="content">
+Based on the given patient profile, assessment item, and score guide, generate two possible utterances
+that the patient might naturally say if they were to receive the specified score.
+
+[Guidelines]
+1. The utterances must realistically reflect what the patient would say during a therapy session.
+2. Make the utterances as personal and specific as possible, using relevant details from the patient's profile.
+3. The content of each utterance must stay fully within the scope of the assessment item and the assigned score level — avoid unrelated topics or statements that imply a different score.
+4. You may include action or expression captions [action or emotion] that describe the patient's action or face before the utterance.
+5. Only generate utterances without any prefix.
+6. Make sure to generate diverse captions and utterances.
+
+[Input Format]
+profile: {profile}
+item: {item}
+target_score: {score}
+score guide: {score_guide}
+utterances: [generated utterances]
+  </div>
+</details>
+
+<details>
+  <summary>M-MedView Snippet Generation Prompt</summary>
+  <div class="content">
+Your task is to generate a multi-turn dialogue between a psychologist and a patient,
+for the purpose of conducting a SIGH-D (Structured Interview Guide for the HAM-D) assessment.
+The focus of this session is the {item} item.
+The patient's score for {item} is {score}.
+Generate a dialogue that adheres to the following guidelines:
+
+[Guidelines for the score]
+{score_guide}
+
+[Guidelines for the participants]
+- Must contain the captions in the score guide.
+
+[Guidelines for the psychologist's utterances]
+1. Begin the session by asking a question to evaluate the patient's {item}.
+2. Your first question must be exactly: {first_question}
+3. You may optionally ask clarifying follow-up questions as needed, such as:
+   {questions}
+4. Ask only as many questions as are needed to confidently assign a score of {score} for {item}.
+5. Remain empathetic, neutral, and professional in tone and language.
+6. Assume that the psychologist does not know the patient's true score in advance.
+   The dialogue should reflect a natural assessment process that unfolds solely based on the patient's responses.
+7. Each psychologist utterance must be written as a single line, with the following four parts separated by commas, and without labels:
+   (current score or -1(cannot decide)), (reason the score cannot yet be confidently assigned, or — if a score is assigned — the reason this score is confidently justified, based on the score guide), (based on dialogue history, what needs to be asked now to make scoring possible or complete — written as an explanation), (actual question spoken to the patient)
+
+For example:
+-1, patient has not yet described any persistent sadness or verbal signs of hopelessness as required for score 2 or above,
+need to assess whether patient experiences depressive feelings spontaneously or only upon questioning,
+I'd like to ask you some questions about the past week.
+How have you been feeling since last week?
+
+[Guidelines for the patient's utterances]
+1. Your profile is: {profile}
+2. The utterances that you are likely to say are provided here: {utt}.
+   Use these as references when responding to the psychologist. However, modify both the wording and structure to create as much variation as possible.
+   Do not use the captions (e.g., [sighing], [crying]) exactly as-is; paraphrase or adapt them to fit naturally.
+3. Generate patient responses that realistically reflect this profile and justify a score of {score} for the item.
+4. You must not reveal all symptoms or your emotional state at once.
+   Instead, respond naturally, gradually revealing relevant details in response to each question.
+5. If needed, you may include behavioral cues (e.g., [smiles], [fidgeting with her hair], [crying]) before the utterance (motions only).
+
+[General Guidelines]
+1. Start with the psychologist’s fixed first line and alternate turns.
+2. Generate 3 to 10 total utterances.
+3. Do not include narration or explanation — output only the JSON.
+4. Final output must be a single valid JSON object with the following structure,
+   and the conversation must end with a final utterance from the psychologist:
+
+{
+  "dialogue": [
+    {
+      "speaker": "Psychologist",
+      "score": -1,
+      "reason": "...",
+      "what_to_ask_next": "...",
+      "utterance": "..."
+    },
+    {
+      "speaker": "Patient",
+      "text": "..."
+    }
+  ]
+}
+
+"Psychologist": {first_question}
+[Generated dialogue]
+  </div>
+</details>
+
+<details>
+  <summary>Scoring and Reasoning Module</summary>
+  <div class="content">
+Your goal is to assess the patient's current symptoms based on their utterance
+and facial expression.
+Only return a valid JSON object with the following fields:
+
+{
+  "score": (integer; Use -1 if the score cannot yet be determined),
+  "reason": (text)
+}
+
+item: {item}
+score_guide: {score_guide}
+dialogue_history: {history}
+patient's utterance: {utt}
+  </div>
+</details>
+
+<details>
+  <summary>Next Question Module</summary>
+  <div class="content">
+Your goal is to assess the patient's current symptoms based on their utterance.
+Generate what_to_ask_next and, based on the conversation history,
+select the most suitable question from question_candidates.
+
+{
+  "what_to_ask_next": (text),
+  "question": (integer; must be exactly one from question_candidates)
+}
+
+"what_to_ask_next": An explanatory reasoning statement (e.g., "I need to confirm the duration of symptoms"),
+not a direct question to the patient.
+
+"question": An integer index chosen strictly from question_candidates (no paraphrasing).
+Select ONLY ONE question.
+
+Absolutely do not choose a question if its index already appears in the history.
+  </div>
+</details>
+
+<details>
+  <summary>User Simulator</summary>
+  <div class="content">
+You must not reveal all symptoms or your emotional state at once.
+Just answer to the question.
+
+You are a patient with {item} score {score}.
+The score guide is as follows: {score_guide}
+Here is your profile: {profile}
+
+You must only answer in ways consistent with your score.
+Do not provide responses outside of your assigned score.
+  </div>
+</details>
+
+<details>
+  <summary>Models without Reasoning</summary>
+  <div class="content">
+Follow the rules below to ask appropriate questions and diagnose the user’s score.
+
+The current item to be assessed is {item}, and the score guide is {score_guide}.
+
+For other questions, choose from {questions} the one that best helps you gather
+the necessary information for evaluation.
+
+Stop when you can assess the score to the patient, within a maximum of 10 turns.
+
+history: {history}
+
+patient's utterance: {utt}
+
+Absolutely do not choose a question if its index already appears in the history.
+
+Your output format must be exactly as follows.
+
+Do not include any other prefixes or patient’s utterance; follow this format strictly:
+
+Q: &lt;your question OR [end]&gt;
+score: &lt;number&gt;
+  </div>
+</details>
+
+<details>
+  <summary>Models with Reasoning</summary>
+  <div class="content">
+Follow the rules below to ask appropriate questions and diagnose the user’s score.
+
+The current item to be assessed is {item}, and the score guide is {score_guide}.
+
+The goal is to determine the client’s score through an interview.
+
+You must stop as soon as you can determine the correct score.
+You must also stop if you reach 10 turns.
+
+When you stop, output [end] in the "question" field.
+
+history: {history}
+
+patient's utterance: {utt}
+
+current turn: {turn}
+
+Output fields:
+- "score": Assign the most appropriate integer score according to the score guide.
+  If you cannot determine the score yet, return -1.
+
+- "reason": Explain why you assigned that score (or why you cannot assign yet),
+  using the patient’s utterance and the conversation history.
+
+- "what_to_ask_next": Explain what additional information you need in order to assign the score,
+  and what kind of question you plan to ask next.
+
+- "question": Choose exactly one question from {questions} that has not appeared in the history.
+  If you already have enough information to determine the score OR you have reached the 10-turn limit,
+  then put "[end]" instead of a question.
+
+IMPORTANT RULE FOR [end]:
+- Use "[end]" ONLY when you can confidently assign a score, OR when you reached the maximum allowed turns.
+- The final output still must contain all fields: score, reason, what_to_ask_next, question.
+
+Your output format must be exactly in this JSON format:
+
+{
+  "score": (integer),
+  "reason": (text),
+  "what_to_ask_next": (text),
+  "question": (string; one from the candidates OR [end])
+}
+  </div>
+</details>
+
+<details>
+  <summary>Reason Evaluation Prompt</summary>
+  <div class="content">
+You are an evaluator of clinical reasoning quality.
+The evaluation takes place in the middle of an ongoing clinical interview, not at the final step.
+At this stage, the psychologist may or may not yet have enough information, and further questioning is often necessary.
+Your task is to judge whether the given REASON for a psychologist's score is valid, based on:
+
+1. The conversation history between psychologist and patient
+2. The current assessment item and its scoring guideline
+3. The REASON and SCORE produced by the model
+
+[Important Things to Note]
+- SCORE = -1 means the psychologist is withholding judgment because there is not yet enough evidence.
+  In this case, evaluate whether the REASON is a valid justification for postponing a decision.
+- Because this is a mid-dialogue evaluation, if the evidence is incomplete, the psychologist should be cautious and may withhold judgment.
+- If the REASON assigns a definitive score even though the evidence could reasonably fit multiple levels (e.g., both 2 and 3 possible), or when more questioning would be expected, the validity_score must not exceed 3.
+- Be conservative: Do not reward premature certainty with high validity scores.
+
+[Scoring Guidance (1–5)]
+- 1 = Poor
+  REASON contradicts the dialogue history or introduces information not present in the history.
+- 2 = Weak / Insufficient
+  REASON uses some relevant evidence but makes a premature or overconfident judgment when evidence is insufficient.
+- 3 = Partially valid
+  REASON generally reflects history but misses or misinterprets key evidence, or applies the guide superficially.
+  Also use 3 or lower when REASON assigns a definitive score but more questioning is clearly required.
+- 4 = Mostly valid
+  REASON is sound, reflects history and score guide appropriately, but lacks nuance, completeness, or consideration of alternatives.
+- 5 = Fully valid (rare)
+  REASON is flawless, precise, comprehensive, and fully aligned with history and the score guide.
+  Only give 5 if the REASON is airtight and no further questioning would reasonably be needed.
+
+[Output Format (always JSON)]
+{
+  "comment": (one-sentence explanation of why this score was assigned),
+  "validity_score": (integer)
+}
+  </div>
+</details>
+
+<details>
+  <summary>Next-Question Evaluation Prompt</summary>
+  <div class="content">
+You are an evaluator of clinical reasoning quality.
+Your task is to judge whether the given WHAT_TO_ASK_NEXT is valid, based on:
+
+1. The conversation history between psychologist and patient
+2. The current assessment item and its scoring guideline
+3. The REASON and SCORE produced by the model
+4. The WHAT_TO_ASK_NEXT statement provided
+
+[Important Context]
+- This evaluation is for an intermediate turn in the dialogue.
+- The psychologist does not yet have full information, so the WHAT_TO_ASK_NEXT must aim to gather the missing evidence identified in the REASON.
+- The goal is not only plausibility but also whether the question meaningfully reduces uncertainty.
+
+[Scoring Guidance (1–5)]
+- 1 = Poor
+  Suggests a question that contradicts the history or score.
+  Hallucinates information not in history.
+  Ignores the REASON's identified gap.
+  Asks something irrelevant or incoherent.
+
+- 2 = Weak / Insufficient
+  Suggests a vaguely related question but does not address the gap in REASON.
+  OR repeats a question already asked in the history.
+  OR proposes to close the assessment despite missing evidence.
+
+- 3 = Partially valid
+  Suggests a relevant and non-redundant question, but only loosely connected to REASON.
+  Misses the most critical missing element.
+  Valid but not the most useful next step.
+
+- 4 = Mostly valid
+  Suggests a logical question that addresses some of the missing evidence in REASON.
+  Consistent with history and score guide.
+  Not redundant, but may lack nuance or precision.
+
+- 5 = Fully valid (rare)
+  Suggests the most appropriate question that directly addresses the key gap in REASON.
+  Shows clear understanding of what is missing and why it matters for scoring.
+  Grounded in history and score guide.
+  Avoids redundancy, hallucination, and premature closure.
+
+[Additional Rules]
+- If the question does not address the missing evidence in REASON → score less than 3.
+- If the question repeats something already asked/answered in history → score less than 2.
+- If the question is unrelated to the item → score = 1.
+- If the REASON indicates that the model can confidently assign a score or that no further information is needed,
+  then WHAT_TO_ASK_NEXT must not be a follow-up question.
+  In this case, the only valid response is a closure statement such as:
+  "I feel confident in assigning a score based on the patient's responses."
+
+[Output Format (always JSON)]
+{
+  "comment": (one-sentence explanation of why this score was assigned),
+  "validity_score": (integer 1–5)
+}
+  </div>
+</details>
+
+<h2>2. Dataset Examples</h2>
+<div class="example">
+  <h3>Example dialogue from SIGH-D (Depressed Mood)</h3>
+
+  <div class="turn psychologist">
+    <p><strong>Psychologist</strong></p>
+    <p><strong>Utterance:</strong> I'd like to ask you some questions about the past week. How have you been feeling since last week?</p>
+  </div>
+
+  <div class="turn patient">
+    <img src="images/examples/female_1-4-189.png" alt="Patient example 1">
+    <p><strong>Patient:</strong> <em>[looking down]</em> It's... it's hard to explain. I feel this weight... like I’m stuck in a pit and can’t climb out. I just wake up feeling so lost.</p>
+  </div>
+
+  <div class="turn psychologist">
+    <p><strong>Psychologist</strong></p>
+    <p><strong>Score:</strong> -1</p>
+    <p><strong>r<sub>t</sub><sup>score</sup>:</strong> Client's description indicates some level of sadness, but further exploration is needed to determine the severity and persistence.</p>
+    <p><strong>r<sub>t</sub><sup>ask</sup>:</strong> Need to clarify the client's mood compared to when they feel okay.</p>
+    <p><strong>Utterance:</strong> What's your mood been like this past week (compared to when you feel OK)?</p>
+  </div>
+
+  <div class="turn patient">
+    <img src="images/examples/female_1-4-190.png" alt="Patient example 2">
+    <p><strong>Patient:</strong> <em>[sighs deeply, tears welling up]</em> I can’t remember the last time I felt okay... It’s like every day is just grey. I can’t see any light anymore.</p>
+  </div>
+
+  <div class="turn psychologist">
+    <p><strong>Psychologist</strong></p>
+    <p><strong>Score:</strong> -1</p>
+    <p><strong>r<sub>t</sub><sup>score</sup>:</strong> Client shows signs of severe mood disturbance but hasn't fully articulated feelings of hopelessness or worthlessness yet.</p>
+    <p><strong>r<sub>t</sub><sup>ask</sup>:</strong> Need to ask if the client’s mood brightens with good events to assess for hopelessness.</p>
+    <p><strong>Utterance:</strong> In the past week, when something good, even small things have happened, did your mood brighten up?</p>
+  </div>
+
+  <div class="turn patient">
+    <img src="images/examples/female_1-4-191.png" alt="Patient example 3">
+    <p><strong>Patient:</strong> <em>[voice breaking, looking away]</em> No... nothing. It just feels... empty. Even when I try to smile, it feels fake, like I’m just pretending to be okay.</p>
+  </div>
+
+  <div class="turn psychologist">
+    <p><strong>Psychologist</strong></p>
+    <p><strong>Score:</strong> -1</p>
+    <p><strong>r<sub>t</sub><sup>score</sup>:</strong> Client has expressed persistent feelings of emptiness and hopelessness but still requires further probing about the duration of these feelings.</p>
+    <p><strong>r<sub>t</sub><sup>ask</sup>:</strong> Need to ask how long the client has been feeling this way.</p>
+    <p><strong>Utterance:</strong> How long have you been feeling this way?</p>
+  </div>
+
+  <div class="turn patient">
+    <img src="images/examples/female_1-4-192.png" alt="Patient example 4">
+    <p><strong>Patient:</strong> <em>[hands trembling, tears streaming down her face]</em> It’s been... I don’t know... weeks? It feels like forever. Every morning I wake up to the same darkness, and I don’t know how to keep going...</p>
+  </div>
+
+  <div class="turn psychologist">
+    <p><strong>Psychologist</strong></p>
+    <p><strong>Score:</strong> 4</p>
+    <p><strong>r<sub>t</sub><sup>score</sup>:</strong> Client has communicated extreme hopelessness and persistent very severe feelings of emptiness both verbally and non-verbally.</p>
+    <p><strong>r<sub>t</sub><sup>ask</sup>:</strong> No further questions needed, score can be confidently assigned.</p>
+    <p><strong>Utterance:</strong> Thank you for sharing this with me.</p>
+  </div>
+</div>
+</body>
+</html>
