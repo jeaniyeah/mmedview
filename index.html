@@ -450,7 +450,11 @@ Your task is to judge whether the given WHAT_TO_ASK_NEXT is valid, based on:
 <h2>2. Dataset Examples</h2>
 <div class="example">
   <h3>Example dialogue from SIGH-D (Depressed Mood)</h3>
-
+  <p>
+      To comply with licensing restrictions of the assessment instrument, questions are not directly included as free-form text in the model output.
+      Instead, the model selects a question by predicting an index from a predefined candidate set.
+      For ease of understanding, examples shown here are presented in natural language, whereas the actual dataset encodes all questions as numerical indices.
+  </p>
   <div class="turn psychologist">
     <p><strong>Psychologist</strong></p>
     <p><strong>Utterance:</strong> I'd like to ask you some questions about the past week. How have you been feeling since last week?</p>
@@ -508,5 +512,9 @@ Your task is to judge whether the given WHAT_TO_ASK_NEXT is valid, based on:
     <p><strong>Utterance:</strong> Thank you for sharing this with me.</p>
   </div>
 </div>
+<p>
+  The dataset generated during this study is available upon reasonable request. 
+  Researchers interested in accessing the data may contact the authors at yeajinmin@postech.ac.kr with a brief description of their intended use.
+</p>
 </body>
 </html>
